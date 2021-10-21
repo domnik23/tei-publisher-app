@@ -3,12 +3,14 @@ xquery version "3.1";
 module namespace anno="http://teipublisher.com/api/annotations";
 
 declare namespace tei="http://www.tei-c.org/ns/1.0";
+declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
 import module namespace router="http://exist-db.org/xquery/router";
 import module namespace errors = "http://exist-db.org/xquery/router/errors";
 import module namespace config="http://www.tei-c.org/tei-simple/config" at "../../config.xqm";
 import module namespace annocfg = "http://teipublisher.com/api/annotations/config" at "../../annotation-config.xqm";
 import module namespace pm-config="http://www.tei-c.org/tei-simple/pm-config" at "../../pm-config.xql";
+import module namespace http="http://expath.org/ns/http-client";
 
 declare function anno:find-references($request as map(*)) {
     map:merge(
@@ -116,6 +118,39 @@ declare function anno:save($request as map(*)) {
                     "content": $serialized,
                     "changes": array { $map?* ! anno:strip-exist-id(.) }
                 }
+        else
+            error($errors:NOT_FOUND, "Document " || $path || " not found")
+};
+
+(:~
+ : Upload the document to github
+ :)
+declare function anno:github-push($request as map(*)) {
+    let $annotations := $request?body
+    let $path := xmldb:decode($request?parameters?path)
+    let $commitMsg  := $request?parameters?commitMsg
+    let $srcDoc := config:get-document($path)
+    let $srcDocDB := util:collection-name($srcDoc) || "/" || util:document-name($srcDoc)
+    let $url  := "https://api.github.com/repos/" || $config:github-owner || "/" || $config:github-repository || "/contents/" || $path
+    let $token := $config:github-token 
+    let $branch := $config:github-branch
+    let $name :=  $config:github-name
+    let $email := $config:github-email
+
+    return
+        if ($srcDoc) then
+            let $sha :=  anno:github-request(concat($url,"?ref=", $branch), $token, "get", map {})?sha
+             let $payload := map {
+                "message" : $commitMsg,
+                "branch" : $branch,
+                "sha" : $sha,
+                "content" : util:base64-encode(unparsed-text($srcDocDB)),
+                "committer" : map {
+                    "name" : $name,
+                    "email" : $email
+                    }
+                }
+            return anno:github-request($url, $token, "put", $payload)?commit?sha
         else
             error($errors:NOT_FOUND, "Document " || $path || " not found")
 };
@@ -447,4 +482,19 @@ declare %private function anno:transform($nodes as node()*, $start, $end, $inAnn
 
 declare function anno:wrap($annotation as map(*), $content as function(*)) {
     annocfg:annotations($annotation?type, $annotation?properties, $content)
+};
+
+declare %private function anno:github-request($url as xs:string, $token as xs:string, $method  as xs:string, $payload as map(*)) {
+    http:send-request(<http:request method="{$method}">
+        {if ($method = "put") then <http:body media-type="application/json" method="text"/>  else ()}
+        <http:header name="Accept" value="application/vnd.github.v3+json" />
+        <http:header name="Authorization" value="{concat('token ',$token)}"/>
+        </http:request>, 
+        $url,
+        serialize($payload,
+            <output:serialization-parameters>
+                <output:method>json</output:method> 
+            </output:serialization-parameters>))[2]
+    => util:base64-decode()
+    => parse-json()
 };
