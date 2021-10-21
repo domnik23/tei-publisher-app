@@ -130,7 +130,6 @@ declare function anno:github-push($request as map(*)) {
     let $path := xmldb:decode($request?parameters?path)
     let $commitMsg  := $request?parameters?commitMsg
     let $srcDoc := config:get-document($path)
-    let $srcDocDB := util:collection-name($srcDoc) || "/" || util:document-name($srcDoc)
     let $url  := "https://api.github.com/repos/" || $config:github-owner || "/" || $config:github-repository || "/contents/" || $path
     let $token := $config:github-token 
     let $branch := $config:github-branch
@@ -139,6 +138,7 @@ declare function anno:github-push($request as map(*)) {
 
     return
         if ($srcDoc) then
+            let $srcDocDB := util:collection-name($srcDoc) || "/" || util:document-name($srcDoc)
             let $sha :=  anno:github-request(concat($url,"?ref=", $branch), $token, "get", map {})?sha
              let $payload := map {
                 "message" : $commitMsg,
