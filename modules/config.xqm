@@ -108,13 +108,10 @@ declare variable $config:pagination-fill := 5;
 : Definition for the git-push of annotations
  :)
 
-declare variable $config:github-token := "146152be6a97a9efe9dd4647e71da8f3e4faf263";
+declare variable $config:github-token := "";
 declare variable $config:github-repository := "tuttle-demo";
 declare variable $config:github-owner := "Jinntec";
 declare variable $config:github-branch := "test";
-declare variable $config:github-name := "Arthur Dent";
-declare variable $config:github-email := "arthur@dent.orbit";
-
 
 (:
  : Display configuration for facets to be shown in the sidebar. The facets themselves

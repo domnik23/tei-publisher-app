@@ -131,29 +131,32 @@ declare function anno:github-push($request as map(*)) {
     let $commitMsg  := $request?parameters?commitMsg
     let $srcDoc := config:get-document($path)
     let $url  := "https://api.github.com/repos/" || $config:github-owner || "/" || $config:github-repository || "/contents/" || $path
-    let $token := $config:github-token 
     let $branch := $config:github-branch
-    let $name :=  $config:github-name
-    let $email := $config:github-email
+    let $name :=  $request?parameters?name
+    let $email := $request?parameters?email
 
-    return
+   return
         if ($srcDoc) then
             let $srcDocDB := util:collection-name($srcDoc) || "/" || util:document-name($srcDoc)
-            let $sha :=  anno:github-request(concat($url,"?ref=", $branch), $token, "get", map {})?sha
-             let $payload := map {
-                "message" : $commitMsg,
-                "branch" : $branch,
-                "sha" : $sha,
-                "content" : util:base64-encode(unparsed-text($srcDocDB)),
-                "committer" : map {
-                    "name" : $name,
-                    "email" : $email
+            let $sha :=  anno:github-request(concat($url,"?ref=", $branch), $config:github-token, "get", map {})
+            return if (not(exists($sha?message))) then
+                let $payload := map {
+                    "message" : $commitMsg,
+                    "branch" : $branch,
+                    "sha" : $sha?sha,
+                    "content" : util:base64-encode(unparsed-text($srcDocDB)),
+                    "committer" : map {
+                        "name" : $name,
+                        "email" : $email
+                        }
                     }
-                }
-            return anno:github-request($url, $token, "put", $payload)?commit?sha
+                return anno:github-request($url, $config:github-token, "put", $payload)?commit?sha
+            else
+            error($errors:NOT_FOUND, "Github error: " ||  $sha?message)
         else
             error($errors:NOT_FOUND, "Document " || $path || " not found")
 };
+
 
 (:~
  : Sort annotations: "edit" actions should be process last, "delete" first
