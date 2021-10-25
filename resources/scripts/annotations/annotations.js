@@ -85,9 +85,13 @@ window.addEventListener("WebComponentsReady", () => {
 	const occurDiv = document.getElementById("occurrences");
 	const occurrences = occurDiv.querySelector("ul");
 	const saveBtn = document.getElementById("form-save");
+	const gitpushBtn = document.getElementById("document-gitpush");
 	const refInput = document.getElementById("form-ref");
 	const authorityInfo = document.getElementById("authority-info");
 	const authorityDialog = document.getElementById("authority-dialog");
+	const gitDialog = document.getElementById("git-dialog");
+	const gitSubmit = document.getElementById("gitsubmit-Btn");
+	const gitClose =  document.getElementById("gitsubmit-cancel");
 	let autoSave = false;
 	let type = "";
 	let text = "";
@@ -257,6 +261,41 @@ window.addEventListener("WebComponentsReady", () => {
 		}
 	}
 
+
+	function gitpush() {
+		console.log('gitpush')
+		const endpoint = document.querySelector("pb-page").getEndpoint();
+		const doc = document.getElementById("document1");
+        const comment = document.querySelector("#git-dialog textarea");
+        if (!comment.value) return;
+        
+
+		return new Promise((resolve, reject) => {
+			fetch(`${endpoint}/api/annotations/gitpush/${doc.path}?commitMsg=${comment.value}`, {
+				method: "POST",
+				mode: "cors",
+				credentials: "same-origin",
+				headers: {
+					"Content-Type": "application/json",
+				}
+			})
+			.then((response) => {
+				if (response.ok) {
+				    gitDialog.close();
+					return response.json();
+				}
+				if (response.status === 401 || response.status === 403) {
+				    gitDialog.close();
+					document.getElementById('permission-denied-dialog').show();
+					throw new Error(response.statusText);
+				}
+				document.getElementById('error-dialog').show();
+				throw new Error(response.statusText);
+			})
+			
+		}); 
+	}
+
 	/**
 	 * Preview the current document with annotations merged in.
 	 *
@@ -395,6 +434,18 @@ window.addEventListener("WebComponentsReady", () => {
 
 	// apply annotation action
 	saveBtn.addEventListener("click", () => save());
+
+	// github action
+	gitpushBtn.addEventListener("click", () => {
+	    gitDialog.open(); 
+	    gitDialog.querySelector("textarea").value = "";
+	});
+	gitSubmit.addEventListener("click", () => gitpush());
+    gitClose.addEventListener("click", () => { 
+        gitDialog.close();
+    });
+        
+
 	// reload source TEI, discarding current annotations
 	document.getElementById('reload-all').addEventListener('click', () => {
 		function reload() {

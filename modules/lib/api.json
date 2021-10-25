@@ -2182,26 +2182,6 @@
 							"example": "Update anotations of graves20.xml"
 						},
 						"required": true
-					},
-					{
-						"name": "name",
-						"in": "query",
-						"description": "Name of commiter ",
-						"schema": {
-							"type": "string",
-							"example": "Arthur Dent"
-						},
-						"required": true
-					},
-					{
-						"name": "email",
-						"in": "query",
-						"description": "Email of commiter",
-						"schema": {
-							"type": "string",
-							"example": "arthur@dent.orbit"
-						},
-						"required": true
 					}
 				],
 				"responses": {

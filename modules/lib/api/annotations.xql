@@ -132,10 +132,10 @@ declare function anno:github-push($request as map(*)) {
     let $srcDoc := config:get-document($path)
     let $url  := "https://api.github.com/repos/" || $config:github-owner || "/" || $config:github-repository || "/contents/" || $path
     let $branch := $config:github-branch
-    let $name :=  $request?parameters?name
-    let $email := $request?parameters?email
+    let $name := sm:id()//sm:username/text()
+    let $email := $config:github-email
 
-   return
+    return
         if ($srcDoc) then
             let $srcDocDB := util:collection-name($srcDoc) || "/" || util:document-name($srcDoc)
             let $sha :=  anno:github-request(concat($url,"?ref=", $branch), $config:github-token, "get", map {})
@@ -152,11 +152,10 @@ declare function anno:github-push($request as map(*)) {
                     }
                 return anno:github-request($url, $config:github-token, "put", $payload)?commit?sha
             else
-            error($errors:NOT_FOUND, "Github error: " ||  $sha?message)
+            error($errors:NOT_FOUND, "Github error:" ||  $sha?message)
         else
             error($errors:NOT_FOUND, "Document " || $path || " not found")
 };
-
 
 (:~
  : Sort annotations: "edit" actions should be process last, "delete" first

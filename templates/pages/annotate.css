@@ -149,3 +149,23 @@ pb-tabs pre {
 paper-icon-button[data-type="edit"] {
     background-color: var(--pb-toolbar-background-color);
 }
+
+#document-gitpush {
+    padding: 8px;
+    border: none;    
+}
+
+#document-gitpush button {
+    border: none;
+    padding: 0;
+}
+
+
+#document-gitpush img {
+    width: 23px;
+    height: 23px;
+}
+
+#git-dialog label, #git-dialog textarea {
+    display: block;
+}
